@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Denison Gas — Field Roster & Housing</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1a3a5c;
+    --accent: #e8a020;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #dde2ea;
+    --text: #1e2530;
+    --muted: #6b7585;
+    --on: #2e7d32; --on-bg: #e8f5e9;
+    --out: #c62828; --out-bg: #ffebee;
+    --leave: #1565c0; --leave-bg: #e3f2fd;
+    --other: #6a1b9a; --other-bg: #f3e5f5;
+    --nav-w: 220px;
+  }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    height: 60px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; }
+  .logo span { color: var(--accent); }
+  .header-sub { font-size: 0.78rem; opacity: 0.7; margin-left: 4px; }
+  header .spacer { flex: 1; }
+  .user-chip { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; }
+
+  /* LAYOUT */
+  .app-body { display: flex; flex: 1; }
+
+  /* SIDEBAR NAV */
+  nav {
+    width: var(--nav-w);
+    background: var(--primary);
+    min-height: calc(100vh - 60px);
+    padding: 20px 0;
+    flex-shrink: 0;
+  }
+  nav .nav-section { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.4); padding: 16px 20px 6px; }
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 20px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 0.88rem;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  nav a:hover { background: rgba(255,255,255,0.08); color: white; }
+  nav a.active { background: rgba(255,255,255,0.12); color: white; border-left-color: var(--accent); }
+  nav a .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  /* MAIN CONTENT */
+  main { flex: 1; padding: 28px; overflow-x: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 1.4rem; font-weight: 600; color: var(--primary); }
+  .page-header p { color: var(--muted); font-size: 0.87rem; margin-top: 4px; }
+
+  /* CARDS */
+  .card { background: var(--card); border-radius: 8px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+  .card-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 14px; font-weight: 600; }
+
+  /* STAT CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border-radius: 8px; border: 1px solid var(--border); padding: 18px 20px; }
+  .stat-card .val { font-size: 2rem; font-weight: 700; color: var(--primary); line-height: 1; }
+  .stat-card .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+  .stat-card .sub { font-size: 0.75rem; color: var(--accent); margin-top: 6px; font-weight: 600; }
+
+  /* DASHBOARD GRID */
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .dash-grid .full { grid-column: 1 / -1; }
+
+  /* ALERTS */
+  .alert { border-radius: 6px; padding: 10px 14px; font-size: 0.83rem; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+  .alert-warn { background: #fff8e1; border-left: 3px solid #f9a825; color: #5d4037; }
+  .alert-info { background: #e8f4fd; border-left: 3px solid #1976d2; color: #0d47a1; }
+  .alert-ok   { background: var(--on-bg); border-left: 3px solid var(--on); color: #1b5e20; }
+
+  /* TABLES */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  th { background: #f0f3f7; color: var(--muted); font-weight: 600; text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbfc; }
+
+  /* SHIFT BADGES */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .b-ON  { background: var(--on-bg);    color: var(--on); }
+  .b-OUT { background: var(--out-bg);   color: var(--out); }
+  .b-A   { background: var(--leave-bg); color: var(--leave); }
+  .b-S   { background: #fff3e0;         color: #e65100; }
+  .b-T   { background: #f3e5f5;         color: #6a1b9a; }
+  .b-TO  { background: #e8f5e9;         color: #2e7d32; }
+  .b-IN  { background: #fff8e1;         color: #f57f17; }
+  .b-OC  { background: #fce4ec;         color: #880e4f; }
+  .b-TOIL{ background: #e0f7fa;         color: #006064; }
+  .b-LWP { background: #fafafa;         color: #616161; border: 1px solid #ddd; }
+  .b-CS  { background: #ede7f6;         color: #4527a0; }
+
+  /* ROSTER GRID */
+  .roster-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .roster-controls select, .roster-controls input { border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; font-size: 0.83rem; color: var(--text); background: white; }
+  .btn { border: none; border-radius: 6px; padding: 8px 16px; font-size: 0.83rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-accent  { background: var(--accent); color: white; }
+  .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn:hover { opacity: 0.85; }
+  .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+
+  /* ROSTER TABLE */
+  .roster-tbl th { font-size: 0.7rem; padding: 7px 6px; }
+  .roster-tbl td { padding: 7px 6px; }
+  .roster-tbl .day-cell { text-align: center; min-width: 36px; }
+  .roster-tbl .name-cell { white-space: nowrap; min-width: 140px; font-weight: 500; }
+  .roster-tbl .role-cell { white-space: nowrap; color: var(--muted); font-size: 0.75rem; }
+  .day-hdr { font-size: 0.7rem; }
+  .day-hdr .dow { color: var(--muted); font-weight: 400; }
+  .today-col { background: #fffde7 !important; }
+  .weekend-col { background: #fafafa; }
+
+  /* FORTNIGHT TABS */
+  .fn-tabs { display: flex; gap: 0; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; width: fit-content; }
+  .fn-tab { padding: 8px 20px; font-size: 0.83rem; cursor: pointer; background: white; color: var(--muted); border: none; font-weight: 500; }
+  .fn-tab.active { background: var(--primary); color: white; }
+
+  /* HOUSING */
+  .site-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .site-tab { padding: 8px 20px; border-radius: 20px; font-size: 0.83rem; font-weight: 600; cursor: pointer; border: 2px solid var(--border); background: white; color: var(--muted); transition: all 0.15s; }
+  .site-tab.active { border-color: var(--primary); background: var(--primary); color: white; }
+
+  .house-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .house-card { background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+  .house-card .hdr { background: var(--primary); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .house-card .hdr .name { font-weight: 700; font-size: 0.92rem; }
+  .house-card .hdr .cap { font-size: 0.75rem; opacity: 0.8; }
+  .house-card .rooms { padding: 12px 16px; }
+  .room-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.83rem; }
+  .room-row:last-child { border-bottom: none; }
+  .room-num { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: var(--primary); flex-shrink: 0; }
+  .room-occ { flex: 1; }
+  .room-occ .occ-name { font-weight: 500; }
+  .room-occ .occ-meta { font-size: 0.73rem; color: var(--muted); }
+  .room-vacant { color: var(--muted); font-style: italic; }
+  .occ-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .dot-perm { background: var(--on); }
+  .dot-visit { background: var(--accent); }
+  .dot-vacant { background: #ddd; }
+
+  /* BOOKING FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+  .form-group label .req { color: #c62828; margin-left: 2px; }
+  .form-group input, .form-group select, .form-group textarea {
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 0.87rem;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .form-group .hint { font-size: 0.75rem; color: var(--muted); }
+  .form-section-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 600; margin: 8px 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--border); grid-column: 1/-1; }
+  .conditional-field { display: none; }
+  .conditional-field.show { display: flex; flex-direction: column; gap: 6px; }
+  .form-actions { margin-top: 24px; display: flex; gap: 12px; }
+
+  /* REPORT */
+  .report-controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .report-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+  .rep-stat { background: var(--bg); border-radius: 6px; padding: 14px 16px; }
+  .rep-stat .rv { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+  .rep-stat .rl { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+  .export-btn-row { display: flex; gap: 10px; margin-top: 20px; }
+
+  /* LEGEND */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--muted); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { display: none; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .report-summary { grid-template-columns: 1fr; }
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--primary); color: white;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 0.85rem; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s; z-index: 999;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DENISON <span>GAS</span></div>
+  <div class="header-sub">Field Roster &amp; Housing</div>
+  <div class="spacer"></div>
+  <div class="user-chip">👤 Rhee Maher &nbsp;|&nbsp; Field Admin</div>
+</header>
+
+<div class="app-body">
+
+<!-- SIDEBAR -->
+<nav>
+  <div class="nav-section">Main</div>
+  <a class="active" onclick="showPage('dashboard',this)">
+    <span class="icon">🏠</span> Dashboard
+  </a>
+  <div class="nav-section">Roster</div>
+  <a onclick="showPage('roster',this)">
+    <span class="icon">📅</span> Field Roster
+  </a>
+  <div class="nav-section">Housing</div>
+  <a onclick="showPage('housing',this)">
+    <span class="icon">🏘️</span> Room Bookings
+  </a>
+  <a onclick="showPage('booking',this)">
+    <span class="icon">➕</span> New Booking
+  </a>
+  <div class="nav-section">Reporting</div>
+  <a onclick="showPage('reports',this)">
+    <span class="icon">📊</span> Monthly Report
+  </a>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ==================== DASHBOARD ==================== -->
+  <div id="dashboard" class="page active">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Current fortnight: <strong>12 Jun – 25 Jun 2026</strong> &nbsp;·&nbsp; Group A on site · Group B off</p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="val">60</div>
+        <div class="lbl">Total Field Staff</div>
+        <div class="sub">14-on / 14-off roster</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">28</div>
+        <div class="lbl">Currently On Site</div>
+        <div class="sub">Group A active</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">4</div>
+        <div class="lbl">On Leave</div>
+        <div class="sub">Annual + Sick</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">12</div>
+        <div class="lbl">Rooms Occupied</div>
+        <div class="sub">YB: 8 &nbsp;·&nbsp; RGP: 4</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card">
+        <div class="card-title">⚠️ Alerts &amp; Actions</div>
+        <div class="alert alert-warn">
+          <span>⚠️</span>
+          <span><strong>Missing cost codes</strong> — 2 bookings at Rolleston (Jun 18–21) have no cost code. <a href="#" onclick="showPage('reports',document.querySelector('nav a:nth-child(9)'))">View report →</a></span>
+        </div>
+        <div class="alert alert-warn">
+          <span>⚠️</span>
+          <span><strong>Unconfirmed accommodation</strong> — Jake Brennan travelling to site Jun 28, no housing booked.</span>
+        </div>
+        <div class="alert alert-info">
+          <span>ℹ️</span>
+          <span><strong>Monthly report due</strong> — June housing report due 30 Jun. <a href="#" onclick="showPage('reports',document.querySelector('nav a:nth-child(9)'))">Generate now →</a></span>
+        </div>
+        <div class="alert alert-ok">
+          <span>✅</span>
+          <span><strong>Yellowbank fully allocated</strong> — All permanent staff housed correctly for this fortnight.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Upcoming Travel to Site</div>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Arriving</th><th>Site</th><th>Accom</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Sam Nguyen</td><td>26 Jun</td><td>RGP</td><td><span class="badge b-ON">House 2</span></td></tr>
+            <tr><td>Claire Foster</td><td>26 Jun</td><td>CTP</td><td><span class="badge b-ON">House 3</span></td></tr>
+            <tr><td>Jake Brennan</td><td>28 Jun</td><td>RGP</td><td><span class="badge b-S" style="background:#ffebee;color:#c62828;">⚠ None booked</span></td></tr>
+            <tr><td>Marcus Hill</td><td>1 Jul</td><td>CTP</td><td><span class="badge b-ON">House 1</span></td></tr>
+            <tr><td>Priya Sharma</td><td>3 Jul</td><td>RGP</td><td><span class="badge b-ON">House 2</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card full">
+        <div class="card-title">📆 Leave This Fortnight</div>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Role</th><th>Type</th><th>From</th><th>To</th><th>Nights</th><th>Employment Hero</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Tony Williams</td><td>Operator</td><td><span class="badge b-A">Annual Leave</span></td><td>12 Jun</td><td>25 Jun</td><td>14</td><td><span style="color:var(--on);font-weight:600;">✔ Synced</span></td></tr>
+            <tr><td>Bec Crawford</td><td>Operator</td><td><span class="badge b-A">Annual Leave</span></td><td>15 Jun</td><td>25 Jun</td><td>11</td><td><span style="color:var(--on);font-weight:600;">✔ Synced</span></td></tr>
+            <tr><td>Dave Kowalski</td><td>Technician</td><td><span class="badge b-S">Sick Leave</span></td><td>19 Jun</td><td>21 Jun</td><td>3</td><td><span style="color:var(--muted);">⚠ Manual entry</span></td></tr>
+            <tr><td>Amy Chen</td><td>Engineer</td><td><span class="badge b-T">Training</span></td><td>17 Jun</td><td>20 Jun</td><td>4</td><td><span style="color:var(--on);font-weight:600;">✔ Synced</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIELD ROSTER ==================== -->
+  <div id="roster" class="page">
+    <div class="page-header">
+      <h1>Field Roster</h1>
+      <p>14-on / 14-off shift schedule — 60 field staff</p>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div class="fn-tabs">
+        <button class="fn-tab active" onclick="switchFortnight('A',this)">Group A &nbsp;·&nbsp; 12–25 Jun (ON SITE)</button>
+        <button class="fn-tab" onclick="switchFortnight('B',this)">Group B &nbsp;·&nbsp; 26 Jun–9 Jul (ON SITE)</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select style="border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:0.83rem;">
+          <option>All Teams</option>
+          <option>Operations</option>
+          <option>Drilling</option>
+          <option>Projects</option>
+          <option>Engineering</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="showToast('Export coming in full build')">⬇ Export</button>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="leg-item"><span class="badge b-ON">ON</span> On Site</span>
+      <span class="leg-item"><span class="badge b-OUT">OUT</span> Off Roster</span>
+      <span class="leg-item"><span class="badge b-IN">IN</span> In Transit</span>
+      <span class="leg-item"><span class="badge b-A">A</span> Annual Leave</span>
+      <span class="leg-item"><span class="badge b-S">S</span> Sick Leave</span>
+      <span class="leg-item"><span class="badge b-T">T</span> Training</span>
+      <span class="leg-item"><span class="badge b-TO">TO</span> Time Off</span>
+      <span class="leg-item"><span class="badge b-TOIL">TOIL</span> Time in Lieu</span>
+      <span class="leg-item"><span class="badge b-CS">CS</span> Compassionate</span>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="tbl-wrap">
+        <table class="roster-tbl" id="rosterTable">
+          <thead>
+            <tr>
+              <th class="name-cell">Name</th>
+              <th class="role-cell">Role</th>
+              <th class="day-cell">12<br><span class="dow">F</span></th>
+              <th class="day-cell">13<br><span class="dow">S</span></th>
+              <th class="day-cell">14<br><span class="dow">S</span></th>
+              <th class="day-cell">15<br><span class="dow">M</span></th>
+              <th class="day-cell">16<br><span class="dow">T</span></th>
+              <th class="day-cell">17<br><span class="dow">W</span></th>
+              <th class="day-cell">18<br><span class="dow">T</span></th>
+              <th class="day-cell">19<br><span class="dow">F</span></th>
+              <th class="day-cell">20<br><span class="dow">S</span></th>
+              <th class="day-cell">21<br><span class="dow">S</span></th>
+              <th class="day-cell today-col">22<br><span class="dow">M</span></th>
+              <th class="day-cell">23<br><span class="dow">T</span></th>
+              <th class="day-cell">24<br><span class="dow">W</span></th>
+              <th class="day-cell">25<br><span class="dow">T</span></th>
+            </tr>
+          </thead>
+          <tbody id="rosterBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <p style="margin-top:10px;font-size:0.75rem;color:var(--muted);">Showing 20 of 60 staff · Full roster available in production build · Today highlighted in yellow</p>
+  </div>
+
+  <!-- ==================== HOUSING ==================== -->
+  <div id="housing" class="page">
+    <div class="page-header">
+      <h1>Room Bookings</h1>
+      <p>Current occupancy · 26 Jun – 9 Jul 2026</p>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div class="site-tabs">
+        <button class="site-tab active" onclick="switchSite('yb',this)">🏘 Yellowbank (CTP)</button>
+        <button class="site-tab" onclick="switchSite('rgp',this)">🏘 Rolleston (RGP)</button>
+      </div>
+      <button class="btn btn-accent btn-sm" onclick="showPage('booking', document.querySelector('nav a:nth-child(7)'))">+ New Booking</button>
+    </div>
+
+    <!-- YELLOWBANK -->
+    <div id="site-yb">
+      <div style="margin-bottom:16px;">
+        <span style="font-size:0.83rem;color:var(--muted);">3 houses &nbsp;·&nbsp; 9 rooms total &nbsp;·&nbsp; <strong style="color:var(--on);">8 occupied</strong> &nbsp;·&nbsp; <strong style="color:var(--muted);">1 vacant</strong></span>
+      </div>
+      <div class="house-grid" id="ybHouses"></div>
+    </div>
+
+    <!-- ROLLESTON -->
+    <div id="site-rgp" style="display:none;">
+      <div style="margin-bottom:16px;">
+        <span style="font-size:0.83rem;color:var(--muted);">3 houses &nbsp;·&nbsp; 9 rooms total &nbsp;·&nbsp; <strong style="color:var(--on);">4 occupied</strong> &nbsp;·&nbsp; <strong style="color:var(--muted);">5 vacant</strong></span>
+      </div>
+      <div class="house-grid" id="rgpHouses"></div>
+    </div>
+  </div>
+
+  <!-- ==================== NEW BOOKING ==================== -->
+  <div id="booking" class="page">
+    <div class="page-header">
+      <h1>New Accommodation Booking</h1>
+      <p>All fields marked <span style="color:#c62828;">*</span> are mandatory</p>
+    </div>
+
+    <div class="card" style="max-width:760px;">
+      <form onsubmit="submitBooking(event)">
+        <div class="form-grid">
+
+          <div class="form-section-title">Traveller Details</div>
+
+          <div class="form-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" placeholder="e.g. Sam Nguyen" required>
+          </div>
+          <div class="form-group">
+            <label>Department <span class="req">*</span></label>
+            <select required>
+              <option value="">Select department…</option>
+              <option>Operations</option>
+              <option>Drilling</option>
+              <option>Projects</option>
+              <option>Engineering</option>
+              <option>HSE</option>
+              <option>Management</option>
+              <option>Contractor / Visitor</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Email <span class="req">*</span></label>
+            <input type="email" placeholder="name@denisongas.com.au" required>
+          </div>
+          <div class="form-group">
+            <label>Employee / Contractor ID</label>
+            <input type="text" placeholder="Optional">
+          </div>
+
+          <div class="form-section-title">Travel Details</div>
+
+          <div class="form-group">
+            <label>Arrival Date <span class="req">*</span></label>
+            <input type="date" required>
+          </div>
+          <div class="form-group">
+            <label>Departure Date <span class="req">*</span></label>
+            <input type="date" required>
+          </div>
+          <div class="form-group">
+            <label>Purpose of Visit <span class="req">*</span></label>
+            <select required>
+              <option value="">Select…</option>
+              <option>Scheduled Rotation</option>
+              <option>Project Work</option>
+              <option>Drilling Support</option>
+              <option>Maintenance</option>
+              <option>Inspection / Audit</option>
+              <option>Training</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Travelling With</label>
+            <input type="text" placeholder="Other travellers (if any)">
+          </div>
+
+          <div class="form-section-title">Accommodation</div>
+
+          <div class="form-group full">
+            <label>Accommodation Required? <span class="req">*</span></label>
+            <select required onchange="handleAccomChange(this.value)">
+              <option value="">Select…</option>
+              <option value="YB">Yes — Yellowbank (CTP)</option>
+              <option value="RGP">Yes — Rolleston (RGP)</option>
+              <option value="NONE">No accommodation required</option>
+            </select>
+            <span class="hint">You must select an option — if unsure, contact Field Admin.</span>
+          </div>
+
+          <div class="form-group conditional-field" id="costCodeField">
+            <label>Cost Code <span class="req">*</span></label>
+            <input type="text" placeholder="e.g. PRJ-2024-047" id="costCodeInput">
+            <span class="hint">Required for all accommodation bookings. Contact your supervisor if you don't have one.</span>
+          </div>
+
+          <div class="form-group conditional-field" id="budgetCatField">
+            <label>Budget Category <span class="req">*</span></label>
+            <select id="budgetCatInput">
+              <option value="">Select…</option>
+              <option>Operations</option>
+              <option>Drilling</option>
+              <option>Projects</option>
+              <option>Overheads</option>
+            </select>
+          </div>
+
+          <div class="form-group conditional-field full" id="roomPrefField">
+            <label>Room Preference</label>
+            <select>
+              <option value="">No preference — Field Admin will allocate</option>
+              <option>Single room</option>
+              <option>Twin share acceptable</option>
+            </select>
+          </div>
+
+          <div class="form-section-title">Additional Notes</div>
+
+          <div class="form-group full">
+            <label>Notes for Field Admin</label>
+            <textarea rows="3" placeholder="Dietary requirements, accessibility needs, special requests…"></textarea>
+          </div>
+
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Submit Booking Request</button>
+          <button type="button" class="btn btn-outline" onclick="showPage('housing',document.querySelector('nav a:nth-child(6)'))">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== REPORTS ==================== -->
+  <div id="reports" class="page">
+    <div class="page-header">
+      <h1>Monthly Housing Report</h1>
+      <p>Auto-generated from booking data</p>
+    </div>
+
+    <div class="report-controls">
+      <select style="border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:0.83rem;">
+        <option>June 2026</option>
+        <option>May 2026</option>
+        <option>April 2026</option>
+        <option>March 2026</option>
+      </select>
+      <select style="border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:0.83rem;">
+        <option>All Sites</option>
+        <option>Yellowbank (CTP) only</option>
+        <option>Rolleston (RGP) only</option>
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="showToast('Report generated ✓')">Generate Report</button>
+    </div>
+
+    <div class="report-summary">
+      <div class="rep-stat"><div class="rv">47</div><div class="rl">Total occupant-nights</div></div>
+      <div class="rep-stat"><div class="rv">12</div><div class="rl">Unique occupants</div></div>
+      <div class="rep-stat"><div class="rv">3</div><div class="rl">Cost codes used</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">June 2026 — Occupancy Detail</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Site</th>
+              <th>House</th>
+              <th>Room</th>
+              <th>Check In</th>
+              <th>Check Out</th>
+              <th>Nights</th>
+              <th>Cost Code</th>
+              <th>Budget Cat.</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Tony Williams</td><td>CTP</td><td>House 1</td><td>Rm 1</td><td>12 Jun</td><td>25 Jun</td><td>14</td><td>OPS-2026-001</td><td>Operations</td><td><span class="badge b-ON">Complete</span></td></tr>
+            <tr><td>Bec Crawford</td><td>CTP</td><td>House 1</td><td>Rm 2</td><td>12 Jun</td><td>25 Jun</td><td>14</td><td>OPS-2026-001</td><td>Operations</td><td><span class="badge b-ON">Complete</span></td></tr>
+            <tr><td>Marcus Hill</td><td>CTP</td><td>House 1</td><td>Rm 3</td><td>12 Jun</td><td>25 Jun</td><td>14</td><td>OPS-2026-001</td><td>Operations</td><td><span class="badge b-ON">Complete</span></td></tr>
+            <tr><td>Amy Chen</td><td>CTP</td><td>House 2</td><td>Rm 1</td><td>12 Jun</td><td>25 Jun</td><td>14</td><td>PRJ-2026-012</td><td>Projects</td><td><span class="badge b-ON">Complete</span></td></tr>
+            <tr><td>Sam Nguyen</td><td>RGP</td><td>House 1</td><td>Rm 1</td><td>14 Jun</td><td>21 Jun</td><td>7</td><td>DRL-2026-003</td><td>Drilling</td><td><span class="badge b-ON">Complete</span></td></tr>
+            <tr><td>Priya Sharma</td><td>RGP</td><td>House 1</td><td>Rm 2</td><td>16 Jun</td><td>23 Jun</td><td>8</td><td>PRJ-2026-012</td><td>Projects</td><td><span class="badge b-ON">Complete</span></td></tr>
+            <tr><td>Dave Kowalski</td><td>RGP</td><td>House 2</td><td>Rm 1</td><td>18 Jun</td><td>21 Jun</td><td>3</td><td style="color:#c62828;font-weight:600;">⚠ Missing</td><td style="color:#c62828;">⚠ Missing</td><td><span class="badge b-S" style="background:#ffebee;color:#c62828;">Action Req.</span></td></tr>
+            <tr><td>Claire Foster</td><td>RGP</td><td>House 2</td><td>Rm 2</td><td>18 Jun</td><td>21 Jun</td><td>3</td><td style="color:#c62828;font-weight:600;">⚠ Missing</td><td style="color:#c62828;">⚠ Missing</td><td><span class="badge b-S" style="background:#ffebee;color:#c62828;">Action Req.</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="export-btn-row">
+        <button class="btn btn-primary btn-sm" onclick="showToast('Exporting to Excel…')">⬇ Export to Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="showToast('Report emailed to recipients ✓')">📧 Email Report</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── NAVIGATION ──────────────────────────────────────────
+function showPage(id, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+}
+
+// ── ROSTER DATA ─────────────────────────────────────────
+const staff = [
+  { name: 'Tony Williams',  role: 'Field Operator',   group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','A','A','A','ON','ON','ON','ON'] },
+  { name: 'Bec Crawford',   role: 'Field Operator',   group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Marcus Hill',    role: 'Field Operator',   group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','IN'] },
+  { name: 'Dave Kowalski',  role: 'Technician',       group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','S','S','S','ON','ON','ON','ON'] },
+  { name: 'Amy Chen',       role: 'Engineer',         group:'A', shifts: ['ON','ON','ON','ON','T','T','T','T','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Sam Nguyen',     role: 'Driller',          group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Priya Sharma',   role: 'Project Engineer', group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Claire Foster',  role: 'HSE Officer',      group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Ryan Tran',      role: 'Field Operator',   group:'A', shifts: ['IN','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Leah Donovan',   role: 'Field Operator',   group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Jack Pearce',    role: 'Supervisor',       group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Nina Russo',     role: 'Field Operator',   group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Chris Baxter',   role: 'Field Operator',   group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Mel Santos',     role: 'Technician',       group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Aaron Burke',    role: 'Driller',          group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','TOIL','TOIL'] },
+  { name: 'Jasmine Yong',   role: 'Engineer',         group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Ben McCormack',  role: 'Field Operator',   group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Fiona Walsh',    role: 'Project Engineer', group:'B', shifts: ['OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT','OUT'] },
+  { name: 'Greg Lawson',    role: 'Supervisor',       group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON'] },
+  { name: 'Kate Morrison',  role: 'HSE Officer',      group:'A', shifts: ['ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','ON','LWP','LWP','LWP'] },
+];
+
+function renderRoster() {
+  const tbody = document.getElementById('rosterBody');
+  tbody.innerHTML = '';
+  staff.forEach(s => {
+    const tr = document.createElement('tr');
+    const todayIdx = 10; // 22 Jun = index 10
+    let cells = `<td class="name-cell">${s.name}</td><td class="role-cell">${s.role}</td>`;
+    s.shifts.forEach((sh, i) => {
+      const cls = i === todayIdx ? ' today-col' : '';
+      cells += `<td class="day-cell${cls}"><span class="badge b-${sh}">${sh}</span></td>`;
+    });
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+}
+
+function switchFortnight(grp, btn) {
+  document.querySelectorAll('.fn-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  showToast(grp === 'A' ? 'Showing Group A · 12–25 Jun' : 'Showing Group B · 26 Jun–9 Jul');
+}
+
+// ── HOUSING DATA ─────────────────────────────────────────
+const ybData = [
+  {
+    name: 'House 1', beds: 3,
+    rooms: [
+      { occ: 'Tony Williams', type: 'perm', meta: 'Operations · OPS-2026-001' },
+      { occ: 'Bec Crawford',  type: 'perm', meta: 'Operations · OPS-2026-001' },
+      { occ: 'Marcus Hill',   type: 'perm', meta: 'Operations · OPS-2026-001' },
+    ]
+  },
+  {
+    name: 'House 2', beds: 3,
+    rooms: [
+      { occ: 'Amy Chen',     type: 'perm', meta: 'Projects · PRJ-2026-012' },
+      { occ: 'Ryan Tran',    type: 'perm', meta: 'Operations · OPS-2026-001' },
+      { occ: null, type: 'vacant', meta: '' },
+    ]
+  },
+  {
+    name: 'House 3 (Visitor)', beds: 3,
+    rooms: [
+      { occ: 'Leah Donovan', type: 'visit', meta: 'HSE · 26 Jun–9 Jul' },
+      { occ: null, type: 'vacant', meta: '' },
+      { occ: null, type: 'vacant', meta: '' },
+    ]
+  },
+];
+
+const rgpData = [
+  {
+    name: 'House 1 (4-bed)', beds: 4,
+    rooms: [
+      { occ: 'Sam Nguyen',   type: 'perm', meta: 'Drilling · DRL-2026-003' },
+      { occ: 'Priya Sharma', type: 'visit', meta: 'Projects · PRJ-2026-012' },
+      { occ: null, type: 'vacant', meta: '' },
+      { occ: null, type: 'vacant', meta: '' },
+    ]
+  },
+  {
+    name: 'House 2 (3-bed)', beds: 3,
+    rooms: [
+      { occ: 'Claire Foster', type: 'perm', meta: 'HSE · OPS-2026-001' },
+      { occ: 'Greg Lawson',   type: 'perm', meta: 'Operations · OPS-2026-001' },
+      { occ: null, type: 'vacant', meta: '' },
+    ]
+  },
+  {
+    name: 'House 3 (2-bed)', beds: 2,
+    rooms: [
+      { occ: null, type: 'vacant', meta: '' },
+      { occ: null, type: 'vacant', meta: '' },
+    ]
+  },
+];
+
+function renderHouses(data, containerId) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  data.forEach(h => {
+    const occ = h.rooms.filter(r => r.occ).length;
+    const pct = Math.round(occ / h.beds * 100);
+    let roomsHtml = h.rooms.map((r, i) => {
+      if (r.occ) {
+        return `<div class="room-row">
+          <div class="room-num">${i+1}</div>
+          <div class="room-occ">
+            <div class="occ-name"><span class="occ-dot dot-${r.type}"></span>${r.occ}</div>
+            <div class="occ-meta">${r.meta}</div>
+          </div>
+        </div>`;
+      } else {
+        return `<div class="room-row">
+          <div class="room-num" style="background:#f5f5f5;color:#bbb;">${i+1}</div>
+          <div class="room-vacant">Vacant</div>
+          <button class="btn btn-accent btn-sm" style="margin-left:auto;" onclick="showPage('booking',document.querySelector('nav a:nth-child(7)'))">Book</button>
+        </div>`;
+      }
+    }).join('');
+
+    el.innerHTML += `
+      <div class="house-card">
+        <div class="hdr">
+          <div class="name">${h.name}</div>
+          <div class="cap">${occ}/${h.beds} occupied &nbsp;·&nbsp; ${pct}%</div>
+        </div>
+        <div class="rooms">${roomsHtml}</div>
+      </div>`;
+  });
+}
+
+function switchSite(site, btn) {
+  document.querySelectorAll('.site-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('site-yb').style.display  = site === 'yb'  ? '' : 'none';
+  document.getElementById('site-rgp').style.display = site === 'rgp' ? '' : 'none';
+}
+
+// ── BOOKING FORM ─────────────────────────────────────────
+function handleAccomChange(val) {
+  const show = val === 'YB' || val === 'RGP';
+  ['costCodeField','budgetCatField','roomPrefField'].forEach(id => {
+    document.getElementById(id).classList.toggle('show', show);
+    if (show && id === 'costCodeInput') document.getElementById(id).required = true;
+  });
+}
+
+function submitBooking(e) {
+  e.preventDefault();
+  showToast('✅ Booking submitted — Field Admin notified');
+  setTimeout(() => showPage('housing', document.querySelector('nav a:nth-child(6)')), 1200);
+}
+
+// ── TOAST ────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── INIT ─────────────────────────────────────────────────
+renderRoster();
+renderHouses(ybData, 'ybHouses');
+renderHouses(rgpData, 'rgpHouses');
+</script>
+</body>
+</html>
